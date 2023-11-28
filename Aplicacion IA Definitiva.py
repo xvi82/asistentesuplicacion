@@ -869,7 +869,7 @@ FALLAMOS
 
 	DESESTIMAR el recurso de suplicación interpuesto por {recurrente_var.get()} contra la sentencia del Juzgado de lo Social nº {juzgado_var.get()} de los de {partido_var.get()}, de fecha {fecha_a_texto(fecha_cal.get_date())}, dictada en autos nº {autos_var.get()}/{autos_year_var.get()}, confirmando la misma en su integridad.
 
-	Sin costas""")
+	Sin costas.""")
 
     final_text = "\n".join(content_sections)
     right_text.delete("1.0", tk.END)
@@ -1258,6 +1258,268 @@ def mostrar_menu(event, lugar):
         # Asegura que el menú se libere después de ser utilizado
         menu.grab_release()
 
+def abrir_ventana_modificacion(lugar):
+    modificacion = tk.Toplevel(root)
+    modificacion.title("Modificación de Hechos Probados")
+    modificacion.configure(bg='white')
+
+    # Set a minimum size for the window
+    modificacion.minsize(670, 274)
+    modificacion.resizable(False, False)
+
+    # Create frames for the layout
+    left_frame = tk.Frame(modificacion, bg='white')
+    left_frame.pack(side=tk.LEFT, fill=tk.Y)
+    left_frame.pack_propagate(False)
+
+    right_frame = tk.Frame(modificacion, bg='white')
+    right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+    right_frame.pack_propagate(False)
+
+    # Create a style
+    style = ttk.Style()
+    style.configure('TFrame', background='white')
+    style.configure('TLabel', background='white')
+    style.configure('TRadiobutton', background='white')
+
+    # Variables to store form data
+    revision_number = tk.StringVar()
+    new_paragraph_or_fact = tk.StringVar(value='Nuevo Hecho')
+    hp_number = tk.StringVar()
+    new_proven_fact = tk.StringVar()
+    old_proven_fact = tk.StringVar()
+    supporting_basis = tk.StringVar()
+
+    # Function to update the constructed message
+    def update_message(*args):
+        # Obtener los valores de los campos
+        revision = revision_number.get()
+        hp_num = hp_number.get()
+        old_fact = old_fact_text.get().strip()
+        new_fact = new_fact_text.get().strip()
+        basis = basis_entry.get()
+
+        # Construir el mensaje
+        full_message = (
+            f"La {revision} revisión fáctica de la parte recurrente, pretende la modificación del HP {hp_num}. "
+            f"En la Sentencia de Instancia, el HP {hp_num}º tiene la siguiente redacción:\n\n"
+            f"«{old_fact}»\n\n"
+            f"La redacción que se propone sería la siguiente:\n\n"
+            f"«{new_fact}»\n\n"
+            f"Para dicha revisión fáctica, la parte recurrente se apoya en {basis}."
+        )
+
+        # Actualizar el widget de texto
+        message_text.configure(state='normal')  # Habilita la edición del texto
+        message_text.delete(1.0, tk.END)  # Elimina el contenido actual
+        message_text.insert(tk.END, full_message)  # Inserta el nuevo mensaje
+        message_text.configure(state='disabled')  # Deshabilita la edición del texto
+
+    # Add a Text widget and a Scrollbar widget for the constructed message
+    message_text = tk.Text(right_frame, font=("SegoeUI", 9), wrap='word', state='disabled', borderwidth=1,
+                           relief='groove', bd=2)
+    message_text.pack(side="top", fill="both", expand=True, padx=5, pady=10)
+    message_scroll = ttk.Scrollbar(right_frame, orient='vertical', command=message_text.yview)
+    message_text['yscrollcommand'] = message_scroll.set
+    message_text.bind("<Button-3>", lambda event: mostrar_menu(event, message_text))
+
+    # Dropdown options
+    revision_options = ['primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta', 'única']
+
+    # Create form fields
+    ttk.Label(left_frame, text="Número de revisión").grid(row=0, column=0, sticky='w', padx=5, pady=2)
+    revision_menu = ttk.Combobox(left_frame, textvariable=revision_number, values=revision_options, state="readonly")
+    revision_menu.grid(row=1, column=0, sticky='ew', padx=5, pady=2)
+    revision_menu.bind('<<ComboboxSelected>>', update_message)
+
+    vcmd = (modificacion.register(solo_numeros), '%P')
+
+    ttk.Label(left_frame, text="Número del HP").grid(row=5, column=0, sticky='w', padx=5, pady=2)
+    hp_entry = ttk.Entry(left_frame, textvariable=hp_number, validate="key", validatecommand=vcmd)
+    hp_entry.grid(row=6, column=0, sticky='ew', padx=5, pady=2)
+    hp_number.trace_add('write', update_message)
+
+    ttk.Label(left_frame, text="Hecho probado antiguo").grid(row=7, column=0, sticky='w', padx=5, pady=2)
+    old_fact_text = ttk.Entry(left_frame, textvariable=old_proven_fact)
+    old_fact_text.grid(row=8, column=0, sticky='ew', padx=5, pady=2)
+    old_proven_fact.trace_add('write', update_message)
+    old_fact_text.bind("<Button-3>", lambda event: mostrar_menu(event, old_fact_text))
+
+    ttk.Label(left_frame, text="Hecho probado nuevo").grid(row=9, column=0, sticky='w', padx=5, pady=2)
+    new_fact_text = ttk.Entry(left_frame, textvariable=new_proven_fact)
+    new_fact_text.grid(row=10, column=0, sticky='ew', padx=5, pady=2)
+    new_proven_fact.trace_add('write', update_message)
+    new_fact_text.bind("<Button-3>", lambda event: mostrar_menu(event, new_fact_text))
+
+    ttk.Label(left_frame, text="En qué se apoya").grid(row=11, column=0, sticky='w', padx=5, pady=2)
+    basis_entry = ttk.Entry(left_frame, textvariable=supporting_basis)
+    basis_entry.grid(row=12, column=0, sticky='ew', padx=5, pady=2)
+    supporting_basis.trace_add('write', update_message)
+    basis_entry.bind("<Button-3>", lambda event: mostrar_menu(event, basis_entry))
+
+    # Function to copy text to clipboard
+    def copy_text_to_clipboard():
+        # Ensure the text widget is enabled before trying to copy
+        message_text.configure(state='normal')
+        modificacion.clipboard_clear()  # Clear the clipboard
+        text_to_copy = message_text.get("1.0", tk.END)  # Get text from the text widget
+        modificacion.clipboard_append(texto_preparado_para_procesador(text_to_copy))  # Append text to the clipboard
+        message_text.configure(state='disabled')  # Disable the text widget again
+
+    # Create the copy button
+    copy_button = ttk.Button(left_frame, text="Copiar Texto", command=copy_text_to_clipboard)
+    copy_button.grid(row=13, column=0, pady=10, padx=5)
+
+    # Pack the Scrollbar widget
+    message_scroll.pack(side="right", fill="y")
+
+    # Call update_message on any variable change
+    revision_number.trace_add('write', update_message)
+    new_paragraph_or_fact.trace_add('write', update_message)
+    hp_number.trace_add('write', update_message)
+    new_proven_fact.trace_add('write', update_message)
+    old_proven_fact.trace_add('write', update_message)
+    supporting_basis.trace_add('write', update_message)
+
+    # Inicia la verificación del portapapeles
+    verificar_portapapeles()
+    center_window_revisor(modificacion)
+
+    # Run the Tkinter event loop
+    modificacion.mainloop()
+
+def abrir_ventana_adicion(lugar):
+    adicion = tk.Toplevel(root)
+    adicion.title("Adición de Hechos Probados")
+    adicion.configure(bg='white')
+
+    # Set a minimum size for the window
+    adicion.minsize(670, 274)
+    adicion.resizable(False, False)
+
+    # Create frames for the layout
+    left_frame = tk.Frame(adicion, bg='white')
+    left_frame.pack(side=tk.LEFT, fill=tk.Y)
+    left_frame.pack_propagate(False)
+
+    right_frame = tk.Frame(adicion, bg='white')
+    right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+    right_frame.pack_propagate(False)
+
+    # Create a style
+    style = ttk.Style()
+    style.configure('TFrame', background='white')
+    style.configure('TLabel', background='white')
+    style.configure('TRadiobutton', background='white')
+
+    # Variables to store form data
+    revision_number = tk.StringVar()
+    new_paragraph_or_fact = tk.StringVar(value='Nuevo Hecho')
+    hp_number = tk.StringVar()
+    new_proven_fact = tk.StringVar()
+    supporting_basis = tk.StringVar()
+
+    # Function to update the constructed message
+    def update_message(*args):
+        # Construye el mensaje
+        revision = revision_number.get()
+        paragraph_fact = 'adición de un nuevo' if new_paragraph_or_fact.get() == 'Nuevo Hecho' else 'adición de un nuevo párrafo al'
+        hp_num = 'HP ' + hp_number.get() + "º"
+        new_fact = new_proven_fact.get()
+        basis = supporting_basis.get()
+        full_message = (
+            f"La {revision} revisión fáctica de la parte recurrente, pretende la {paragraph_fact} "
+            f"{hp_num}, cuya redacción sería la siguiente:\n\n«{new_fact}»\n\n"
+            f"Para dicha revisión fáctica, la parte recurrente se apoya en {basis}."
+        )
+
+        # Actualiza el Text widget
+        message_text.configure(state='normal')  # Habilita la edición del texto
+        message_text.delete(1.0, tk.END)  # Elimina el contenido actual
+        message_text.insert(tk.END, full_message)  # Inserta el nuevo mensaje
+        message_text.configure(state='disabled')  # Deshabilita la edición del texto
+
+    # Add a Text widget and a Scrollbar widget for the constructed message
+    message_text = tk.Text(right_frame, font=("SegoeUI", 9), wrap='word', state='disabled', borderwidth=1,
+                           relief='groove', bd=2)
+    message_text.pack(side="top", fill="both", expand=True, padx=5, pady=10)
+    message_scroll = ttk.Scrollbar(right_frame, orient='vertical', command=message_text.yview)
+    message_text['yscrollcommand'] = message_scroll.set
+    message_text.bind("<Button-3>", lambda event: mostrar_menu(event, message_text))
+
+    # Dropdown options
+    revision_options = ['primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta', 'única']
+
+    # Create form fields
+    ttk.Label(left_frame, text="Número de revisión").grid(row=0, column=0, sticky='w', padx=5, pady=2)
+    revision_menu = ttk.Combobox(left_frame, textvariable=revision_number, values=revision_options, state="readonly")
+    revision_menu.grid(row=1, column=0, sticky='ew', padx=5, pady=2)
+    revision_menu.bind('<<ComboboxSelected>>', update_message)
+
+    ttk.Label(left_frame, text="Nuevo párrafo o nuevo hecho").grid(row=2, column=0, sticky='w', padx=5, pady=2)
+    ttk.Radiobutton(left_frame, text="Nuevo Hecho", variable=new_paragraph_or_fact, value='Nuevo Hecho').grid(row=3,
+                                                                                                              column=0,
+                                                                                                              sticky='w',
+                                                                                                              padx=15,
+                                                                                                              pady=2)
+    ttk.Radiobutton(left_frame, text="Nuevo Párrafo", variable=new_paragraph_or_fact, value='Nuevo Párrafo').grid(row=4,
+                                                                                                                  column=0,
+                                                                                                                  sticky='w',
+                                                                                                                  padx=15,
+                                                                                                                  pady=2)
+    new_paragraph_or_fact.trace_add('write', update_message)
+
+    # Configuración del validador
+    vcmd = (adicion.register(solo_numeros), '%P')
+
+    ttk.Label(left_frame, text="Número del HP").grid(row=5, column=0, sticky='w', padx=5, pady=2)
+    hp_entry = ttk.Entry(left_frame, textvariable=hp_number, validate="key", validatecommand=vcmd)
+    hp_entry.grid(row=6, column=0, sticky='ew', padx=5, pady=2)
+    hp_number.trace_add('write', update_message)
+
+    ttk.Label(left_frame, text="Párrafo o Hecho probado nuevo").grid(row=7, column=0, sticky='w', padx=5, pady=2)
+    fact_entry = ttk.Entry(left_frame, textvariable=new_proven_fact)
+    fact_entry.grid(row=8, column=0, sticky='ew', padx=5, pady=2)
+    new_proven_fact.trace_add('write', update_message)
+    fact_entry.bind("<Button-3>", lambda event: mostrar_menu(event, fact_entry))
+
+    ttk.Label(left_frame, text="En qué se apoya").grid(row=9, column=0, sticky='w', padx=5, pady=2)
+    basis_entry = ttk.Entry(left_frame, textvariable=supporting_basis)
+    basis_entry.grid(row=10, column=0, sticky='ew', padx=5, pady=2)
+    supporting_basis.trace_add('write', update_message)
+    basis_entry.bind("<Button-3>", lambda event: mostrar_menu(event, basis_entry))
+
+    # Function to copy text to clipboard
+    def copy_text_to_clipboard():
+        # Ensure the text widget is enabled before trying to copy
+        message_text.configure(state='normal')
+        adicion.clipboard_clear()  # Clear the clipboard
+        text_to_copy = message_text.get("1.0", tk.END)  # Get text from the text widget
+        adicion.clipboard_append(texto_preparado_para_procesador(text_to_copy))  # Append text to the clipboard
+        message_text.configure(state='disabled')  # Disable the text widget again
+
+    # Create the copy button
+    copy_button = ttk.Button(left_frame, text="Copiar Texto", command=copy_text_to_clipboard)
+    copy_button.grid(row=11, column=0, pady=10, padx=5)
+
+    # Pack the Scrollbar widget
+    message_scroll.pack(side="right", fill="y")
+
+    # Call update_message on any variable change
+    revision_number.trace_add('write', update_message)
+    new_paragraph_or_fact.trace_add('write', update_message)
+    hp_number.trace_add('write', update_message)
+    new_proven_fact.trace_add('write', update_message)
+    supporting_basis.trace_add('write', update_message)
+
+    # Inicia la verificación del portapapeles
+    verificar_portapapeles()
+
+    center_window_revisor(adicion)
+
+    # Run the Tkinter event loop
+    adicion.mainloop()
+
 def mostrar_menu_derecha(event, lugar):
     menu = tk.Menu(root, tearoff=0)
 
@@ -1273,7 +1535,7 @@ def mostrar_menu_derecha(event, lugar):
     menu_censura_juridica = tk.Menu(menu, tearoff=0)
     # Aquí agregas las opciones para Censura Jurídica
     opciones_censura = [("Desestima", "Por ende, se desestima este motivo de censura jurídica."),
-                        ("Desestima y confirma", "Por ende, se desestima este motivo de censura jurídica."),
+                        ("Desestima y confirma", "Por ende, se desestima este motivo de censura jurídica y se confirma la sentencia de instancia."),
                         "SEPARATOR",
                         ("Censura jurídica defectuosa", """	La inexistente explicación de por qué se entienden infringidos los preceptos {#forminput -text ¿Qué se alega como infringido? -type 6 -items Preceptos legales|Preceptos constitucionales -vals legales|contitucionales -variablename Qué se alega como infringido} que cita, no cumple con las exigencias establecidas en el artículo 196.2 in fine LRJS acerca de la justificación de la pertinencia y fundamentación del motivo. 
 	Adolece, en consecuencia, el recurso de suplicación de un requisito esencial, cual es que no razona la pertinencia y fundamentación del motivo de manera que se pueda deducir cuál sería el alcance de la infracción y su adecuación al presente supuesto. Siendo así que esta Sala no puede colaborar de oficio en la construcción del recurso, ya que ello atentaría contra el principio de seguridad jurídica y colocaría a la recurrida en indefensión, ni puede conocer, so pena de romper el principio de igualdad entre las partes, de violaciones jurídicas no acusadas por y en el recurso de suplicación o defectuosamente justificadas en orden a su pertinencia y fundamentación jurídica, con la única salvedad -que no es el caso de autos- de que, por afectar al orden público, cupiera actuar de oficio.
@@ -1323,11 +1585,10 @@ La mera denegación de la concreción horaria que interesa la persona trabajador
     opciones_despues_separador = opciones_censura[indice_separador + 1:]
 
     # Ordenar las opciones por conteo de uso
-    opciones_antes_separador_ordenadas = sorted(opciones_antes_separador, key=lambda x: conteo_uso_opciones.get(x[1], 0), reverse=True)
     opciones_despues_separador_ordenadas = sorted(opciones_despues_separador, key=lambda x: conteo_uso_opciones.get(x[1], 0), reverse=True)
 
     # Añadir las opciones ordenadas al menú
-    for opcion, texto in opciones_antes_separador_ordenadas:
+    for opcion, texto in opciones_antes_separador:
         menu_censura_juridica.add_command(label=opcion, command=lambda t=texto: pegar_en_texto(t, lugar))
 
     # Añadir el separador
@@ -1381,12 +1642,17 @@ En los citados pronunciamientos subyace un principio de respeto de la valoració
     opciones_despues_separador = opciones_revision[indice_separador + 1:]
 
     # Ordenar las opciones por conteo de uso
-    opciones_antes_separador_ordenadas = sorted(opciones_antes_separador, key=lambda x: conteo_uso_opciones.get(x[1], 0), reverse=True)
     opciones_despues_separador_ordenadas = sorted(opciones_despues_separador, key=lambda x: conteo_uso_opciones.get(x[1], 0), reverse=True)
 
     # Añadir las opciones ordenadas al menú
-    for opcion, texto in opciones_antes_separador_ordenadas:
+    for opcion, texto in opciones_antes_separador:
         menu_revision_factiva.add_command(label=opcion, command=lambda t=texto: pegar_en_texto(t, lugar))
+
+    menu_revision_factiva.add_separator()
+
+    menu_revision_factiva.add_command(label="Adición", command=lambda: abrir_ventana_adicion(lugar))
+    menu_revision_factiva.add_command(label="Modificación", command=lambda: abrir_ventana_modificacion(lugar))
+
 
     # Añadir el separador
     menu_revision_factiva.add_separator()
@@ -1438,6 +1704,8 @@ def load_config():
 root = tk.Tk()
 root.title('Asistente a la Suplicación')
 root.geometry("1300x800")  # Establece el tamaño de la ventana a 1300x800
+root.iconbitmap('icon.ico')
+
 
 # todo blanco
 style = ttk.Style()
@@ -1468,7 +1736,7 @@ left_frame = ttk.Frame(root, width=200, style='White.TFrame')
 left_frame.grid(row=0, column=0, sticky="ns")
 
 # Right frame for text display
-right_frame = ttk.Frame(root)
+right_frame = ttk.Frame(root, style='White.TFrame')
 right_frame.grid(row=0, column=1, sticky="nsew")
 
 
@@ -1478,6 +1746,8 @@ left_scrollbar = ttk.Scrollbar(left_frame, orient="vertical", command=left_canva
 left_scrollable_frame = ttk.Frame(left_canvas, style='White.TFrame')
 # En Windows, el evento MouseWheel puede ser usado directamente.
 left_canvas.bind_all("<MouseWheel>", lambda e: left_canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+
+
 
 
 # Añadir un padding interno al canvas para centrar los widgets
@@ -1951,8 +2221,8 @@ def stop_progress_bar():
     progress_bar.pack_forget()
 
 # Right text widget
-right_text = tk.Text(right_frame, wrap="word", padx=10, pady=10, font=("SegoeUI", 9))
-right_text.grid(row=0, column=0, sticky="nsew")
+right_text = tk.Text(right_frame, wrap="word", padx=10, pady=10, font=("SegoeUI", 9), relief='groove', bd=2)
+right_text.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 right_text.bind("<Button-3>", lambda event: mostrar_menu_derecha(event, right_text))
 right_frame.grid_rowconfigure(0, weight=1)
 right_frame.grid_columnconfigure(0, weight=1)
